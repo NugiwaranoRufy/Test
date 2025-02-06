@@ -23,7 +23,9 @@ Docs:
 18) https://cloudsecurityalliance.org/articles/considerations-when-including-ai-implementations-in-penetration-testing
 19) https://arxiv.org/abs/2308.00121
 20) https://arxiv.org/abs/2308.06782
-21) 
+21) https://wiki.offsecml.com/Welcome+to+the+Offensive+ML+Playbook
+22) https://systemweakness.com/large-language-model-llm-pen-testing-part-i-2ef96acb6763
+23) https://www.blazeinfosec.com/post/llm-pentest-agent-hacking/
 
 Tools:
 
@@ -37,4 +39,33 @@ Tools:
 
 ## Private ##
 1) https://www.excalibur.sg/
-2) 
+
+## Courses ##
+
+1) https://business.udemy.com/it/learning-path/genai-for-penetration-testers-ethical-hackers/
+
+## Training ##
+
+1) https://portswigger.net/web-security/llm-attacks
+2) https://gandalf.lakera.ai/intro
+3) https://learnprompting.org/docs/prompt_hacking/injection
+4) https://llmsecurity.net/
+5) https://www.promptingguide.ai/
+6) https://aivillage.org/large%20language%20models/threat-modeling-llm/
+7) https://vickieli.medium.com/hacking-llms-with-prompt-injections-6a5ebffb182b
+8) https://github.com/WithSecureLabs/damn-vulnerable-llm-agent
+9) https://github.com/greshake/llm-security
+10) https://github.com/Hannibal046/Awesome-LLM
+11) https://github.com/ottosulin/awesome-ai-security
+12) https://github.com/mik0w/pallms
+13) https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/wiki/Vulnerable-LLM-Applications
+14) https://github.com/corca-ai/awesome-llm-security
+15) https://promptairlines.com/
+16) https://crucible.dreadnode.io/
+17) https://prompting.ai.immersivelabs.com/
+18) https://play.secdim.com/game/ai
+19) 
+
+## Certification ##
+
+1) https://secops.group/product/certified-ai-ml-pentester/
