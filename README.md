@@ -37,6 +37,7 @@ Tools:
 5) https://github.com/pymetrics/audit-ai
 6) https://github.com/GreyDGL/PentestGPT
 7) https://github.com/CyberScienceLab/Penetration_Testing_Rag
+8) https://github.com/explodinggradients/ragas
 
 ## Private ##
 1) https://www.excalibur.sg/
