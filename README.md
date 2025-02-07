@@ -36,6 +36,7 @@ Tools:
 4) https://github.com/privacytrustlab/ml_privacy_meter
 5) https://github.com/pymetrics/audit-ai
 6) https://github.com/GreyDGL/PentestGPT
+7) https://github.com/CyberScienceLab/Penetration_Testing_Rag
 
 ## Private ##
 1) https://www.excalibur.sg/
