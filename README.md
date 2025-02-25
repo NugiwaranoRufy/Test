@@ -26,6 +26,8 @@ Docs:
 21) https://wiki.offsecml.com/Welcome+to+the+Offensive+ML+Playbook
 22) https://systemweakness.com/large-language-model-llm-pen-testing-part-i-2ef96acb6763
 23) https://www.blazeinfosec.com/post/llm-pentest-agent-hacking/
+24) https://github.com/grepstrength/WideOpenAI
+25) https://llm-attacks.org/
 
 Tools:
 
@@ -66,7 +68,8 @@ Tools:
 16) https://crucible.dreadnode.io/
 17) https://prompting.ai.immersivelabs.com/
 18) https://play.secdim.com/game/ai
-19) 
+19) https://doublespeak.chat/#/
+20) https://github.com/dhammon/ai-goat
 
 ## Certification ##
 
