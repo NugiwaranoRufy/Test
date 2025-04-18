@@ -1,13 +1,20 @@
-// Aeon: PS5 Emulator - Expanded Core Modules (Rust)
+// Aeon: PS5 Emulator - Advanced Core Modules (Rust)
 
 // === cpu/mod.rs ===
 pub mod cpu {
     use std::collections::VecDeque;
 
+    #[derive(Debug)]
+    pub enum Instruction {
+        Mov(u8, u64), // Mov reg, imm
+        Add(u8, u8, u8), // Add r1 = r2 + r3
+        Print(u8),
+    }
+
     pub struct CPU {
         pub pc: u64,
         pub registers: [u64; 32],
-        pub instruction_queue: VecDeque<u64>,
+        pub instruction_queue: VecDeque<Instruction>,
     }
 
     impl CPU {
@@ -19,13 +26,24 @@ pub mod cpu {
             }
         }
 
-        pub fn queue_instruction(&mut self, instr: u64) {
+        pub fn queue_instruction(&mut self, instr: Instruction) {
             self.instruction_queue.push_back(instr);
         }
 
         pub fn step(&mut self) {
             if let Some(instr) = self.instruction_queue.pop_front() {
-                println!("Executing instruction: {:x}", instr);
+                match instr {
+                    Instruction::Mov(r, val) => {
+                        self.registers[r as usize] = val;
+                    }
+                    Instruction::Add(dst, src1, src2) => {
+                        self.registers[dst as usize] =
+                            self.registers[src1 as usize] + self.registers[src2 as usize];
+                    }
+                    Instruction::Print(r) => {
+                        println!("[CPU] r{} = {}", r, self.registers[r as usize]);
+                    }
+                }
                 self.pc += 4;
             }
         }
@@ -34,16 +52,24 @@ pub mod cpu {
 
 // === gpu/mod.rs ===
 pub mod gpu {
+    use ash::{version::InstanceV1_0, vk, Entry};
+
     pub fn init_gpu() {
-        println!("Initializing Vulkan renderer...");
+        println!("[GPU] Vulkan initialization (stub for now)");
+        let entry = Entry::linked();
+        let _instance = unsafe {
+            entry
+                .create_instance(&vk::InstanceCreateInfo::default(), None)
+                .expect("Failed to create Vulkan instance")
+        };
     }
 
     pub fn render_frame() {
-        println!("Rendering frame...");
+        println!("[GPU] Rendering frame...");
     }
 
     pub fn submit_command_buffer() {
-        println!("Submitting GPU command buffer...");
+        println!("[GPU] Submitting GPU command buffer...");
     }
 }
 
@@ -130,6 +156,7 @@ pub mod io {
 
 // === fs/mod.rs ===
 pub mod fs {
+    use goblin::elf::Elf;
     use std::fs::File;
     use std::io::Read;
 
@@ -142,7 +169,39 @@ pub mod fs {
     }
 
     pub fn parse_elf(elf_data: &[u8]) {
-        println!("[FS] Parsing ELF (stub): {} bytes", elf_data.len());
+        match Elf::parse(elf_data) {
+            Ok(elf) => {
+                println!("[FS] ELF Entry: 0x{:x}", elf.entry);
+                for ph in elf.program_headers.iter() {
+                    println!("[FS] Segment: offset=0x{:x}, vaddr=0x{:x}, memsz=0x{:x}",
+                        ph.p_offset, ph.p_vaddr, ph.p_memsz);
+                }
+            }
+            Err(e) => println!("[FS] Failed to parse ELF: {}", e),
+        }
+    }
+}
+
+// === memory/mod.rs ===
+pub mod memory {
+    use std::collections::HashMap;
+
+    pub struct MMU {
+        memory: HashMap<u64, u8>,
+    }
+
+    impl MMU {
+        pub fn new() -> Self {
+            Self { memory: HashMap::new() }
+        }
+
+        pub fn write(&mut self, addr: u64, val: u8) {
+            self.memory.insert(addr, val);
+        }
+
+        pub fn read(&self, addr: u64) -> Option<u8> {
+            self.memory.get(&addr).copied()
+        }
     }
 }
 
@@ -165,6 +224,9 @@ mod kernel;
 mod io;
 mod fs;
 mod gui;
+mod memory;
+
+use cpu::cpu::{CPU, Instruction};
 
 fn main() {
     println!("[Aeon] PlayStation 5 Emulator Booting...");
@@ -174,9 +236,11 @@ fn main() {
     if let Some(code) = elf {
         fs::fs::parse_elf(&code);
 
-        let mut cpu = cpu::cpu::CPU::new();
-        cpu.queue_instruction(0xdeadbeef);
-        cpu.queue_instruction(0xcafebabe);
+        let mut cpu = CPU::new();
+        cpu.queue_instruction(Instruction::Mov(0, 10));
+        cpu.queue_instruction(Instruction::Mov(1, 20));
+        cpu.queue_instruction(Instruction::Add(2, 0, 1));
+        cpu.queue_instruction(Instruction::Print(2));
 
         let mut scheduler = kernel::kernel::Scheduler::new();
         scheduler.add_thread(1, "MainThread");
@@ -186,6 +250,10 @@ fn main() {
 
         let syscall_table = syscalls::syscalls::SyscallTable::new();
         syscall_table.call(1, &[42]);
+
+        let mut mmu = memory::memory::MMU::new();
+        mmu.write(0x1000, 0xFF);
+        println!("[MMU] Read 0x1000 = {:?}", mmu.read(0x1000));
 
         gpu::gpu::init_gpu();
         gui::gui::start_gui();
