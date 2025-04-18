@@ -1,0 +1,116 @@
+// Aeon: PS5 Emulator - Core Modules (Rust Skeleton)
+
+// === cpu/mod.rs ===
+pub mod cpu {
+    pub fn execute_instruction(instr: u64) {
+        // Dummy instruction executor
+        println!("Executing instruction: {:x}", instr);
+    }
+}
+
+// === gpu/mod.rs ===
+pub mod gpu {
+    pub fn init_gpu() {
+        println!("Initializing Vulkan renderer...");
+        // Stub: Vulkan init logic
+    }
+
+    pub fn render_frame() {
+        println!("Rendering frame...");
+    }
+}
+
+// === syscalls/mod.rs ===
+pub mod syscalls {
+    use std::collections::HashMap;
+
+    pub type SyscallFn = fn(args: &[u64]) -> u64;
+
+    pub struct SyscallTable {
+        table: HashMap<u64, SyscallFn>,
+    }
+
+    impl SyscallTable {
+        pub fn new() -> Self {
+            let mut t = HashMap::new();
+            t.insert(1, |args| { println!("[SYSCALL] print: {}", args[0]); 0 });
+            Self { table: t }
+        }
+
+        pub fn call(&self, id: u64, args: &[u64]) -> u64 {
+            self.table.get(&id).map(|f| f(args)).unwrap_or(0)
+        }
+    }
+}
+
+// === kernel/mod.rs ===
+pub mod kernel {
+    use std::thread;
+    use std::time::Duration;
+
+    pub fn scheduler_tick() {
+        println!("[KERNEL] Scheduler tick...");
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+// === io/mod.rs ===
+pub mod io {
+    pub fn poll_input() -> Option<String> {
+        Some("User pressed X".to_string())
+    }
+}
+
+// === fs/mod.rs ===
+pub mod fs {
+    use std::fs::File;
+    use std::io::Read;
+
+    pub fn load_elf(path: &str) -> Option<Vec<u8>> {
+        let mut f = File::open(path).ok()?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf).ok()?;
+        println!("[FS] Loaded ELF: {} ({} bytes)", path, buf.len());
+        Some(buf)
+    }
+}
+
+// === gui/mod.rs ===
+pub mod gui {
+    pub fn start_gui() {
+        println!("[GUI] Launching frontend... (stub)");
+    }
+}
+
+// === main.rs ===
+mod cpu;
+mod gpu;
+mod syscalls;
+mod kernel;
+mod io;
+mod fs;
+mod gui;
+
+fn main() {
+    println!("[Aeon] PlayStation 5 Emulator Booting...");
+
+    let elf = fs::fs::load_elf("game.elf");
+
+    if let Some(_code) = elf {
+        gpu::gpu::init_gpu();
+        gui::gui::start_gui();
+
+        let syscall_table = syscalls::syscalls::SyscallTable::new();
+        syscall_table.call(1, &[42]);
+
+        cpu::cpu::execute_instruction(0xdeadbeef);
+
+        loop {
+            kernel::kernel::scheduler_tick();
+            gpu::gpu::render_frame();
+            if let Some(event) = io::io::poll_input() {
+                println!("[INPUT] {}", event);
+            }
+        }
+    }
+}
