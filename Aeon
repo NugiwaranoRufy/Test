@@ -15,27 +15,19 @@ use controller::DualSense;
 use audio::AudioEngine;
 
 fn main() {
-    // Load ELF executable
     let elf = ElfParser::load("game.elf").expect("Failed to load ELF");
-
-    // Initialize memory and load segments
     let mut memory = Memory::new(0x100000000); // 4GB
     memory.load_segments(&elf);
 
-    // Initialize ARM64 CPU
     let mut cpu = Arm64Cpu::new(&memory);
     cpu.set_entry_point(elf.entry);
 
-    // Initialize Vulkan renderer
     let mut renderer = VulkanRenderer::init().expect("Failed to init Vulkan");
-
-    // Initialize controller
     let mut controller = DualSense::new();
-
-    // Initialize audio
     let mut audio_engine = AudioEngine::new();
 
-    // Emulation loop
+    println!("[Aeon] Emulation started at 0x{:X}", elf.entry);
+
     loop {
         cpu.step();
         renderer.render_frame();
@@ -45,6 +37,7 @@ fn main() {
 }
 
 // elf_parser.rs
+
 use goblin::elf::Elf;
 use std::fs;
 use std::path::Path;
@@ -52,26 +45,36 @@ use std::path::Path;
 pub struct ElfParser {
     pub elf: Elf<'static>,
     pub entry: u64,
+    pub input: Vec<u8>,
 }
 
 impl ElfParser {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, String> {
         let data = fs::read(path).map_err(|e| e.to_string())?;
         let elf = Elf::parse(&data).map_err(|e| e.to_string())?;
-        Ok(Self { elf, entry: elf.entry })
+        Ok(Self {
+            elf,
+            entry: elf.entry,
+            input: data,
+        })
     }
 }
 
 // arm64_emulator.rs
+
 pub struct Arm64Cpu<'a> {
     memory: &'a crate::memory::Memory,
+    regs: [u64; 31],
     pc: u64,
-    // TODO: General-purpose registers, flags, etc.
 }
 
 impl<'a> Arm64Cpu<'a> {
     pub fn new(memory: &'a crate::memory::Memory) -> Self {
-        Self { memory, pc: 0 }
+        Self {
+            memory,
+            regs: [0; 31],
+            pc: 0,
+        }
     }
 
     pub fn set_entry_point(&mut self, entry: u64) {
@@ -79,18 +82,20 @@ impl<'a> Arm64Cpu<'a> {
     }
 
     pub fn step(&mut self) {
-        // TODO: Fetch, decode, execute ARM64 instructions
-        println!("[CPU] Executing at 0x{:X}", self.pc);
-        self.pc += 4; // Placeholder for instruction size
+        let opcode = self.memory.read_word(self.pc);
+        println!("[CPU] Executing opcode {:08X} at 0x{:X}", opcode, self.pc);
+        self.pc += 4;
     }
 }
 
 // memory.rs
+
 use std::collections::HashMap;
+use crate::elf_parser::ElfParser;
 
 pub struct Memory {
-    data: Vec<u8>,
-    pages: HashMap<u64, bool>,
+    pub data: Vec<u8>,
+    pub pages: HashMap<u64, bool>,
 }
 
 impl Memory {
@@ -101,16 +106,22 @@ impl Memory {
         }
     }
 
-    pub fn load_segments(&mut self, elf: &crate::elf_parser::ElfParser) {
+    pub fn load_segments(&mut self, elf: &ElfParser) {
         for ph in &elf.elf.program_headers {
             if ph.p_type == goblin::elf::program_header::PT_LOAD {
-                let file_offset = ph.p_offset as usize;
-                let mem_offset = ph.p_vaddr as usize;
-                let file_size = ph.p_filesz as usize;
-                self.data[mem_offset..mem_offset + file_size]
-                    .copy_from_slice(&elf.elf.input[file_offset..file_offset + file_size]);
+                let start = ph.p_vaddr as usize;
+                let size = ph.p_filesz as usize;
+                let offset = ph.p_offset as usize;
+                self.data[start..start + size]
+                    .copy_from_slice(&elf.input[offset..offset + size]);
+                self.pages.insert(ph.p_vaddr, true);
             }
         }
+    }
+
+    pub fn read_word(&self, addr: u64) -> u32 {
+        let bytes = &self.data[addr as usize..(addr + 4) as usize];
+        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
     }
 
     pub fn read_byte(&self, addr: u64) -> u8 {
@@ -123,28 +134,35 @@ impl Memory {
 }
 
 // vulkan_renderer.rs
-use ash::version::EntryV1_0;
-use ash::version::InstanceV1_0;
-use ash::vk;
 
-pub struct VulkanRenderer;
+use ash::version::{EntryV1_0, InstanceV1_0};
+use ash::{vk, Entry};
+
+pub struct VulkanRenderer {
+    _entry: Entry,
+    _instance: ash::Instance,
+}
 
 impl VulkanRenderer {
     pub fn init() -> Result<Self, String> {
-        let entry = unsafe { ash::Entry::load().unwrap() };
-        let instance = entry
-            .create_instance(&vk::InstanceCreateInfo::builder(), None)
-            .map_err(|e| format!("{:?}", e))?;
-        println!("[GPU] Vulkan instance initialized");
-        Ok(Self)
+        let entry = Entry::linked();
+        let create_info = vk::InstanceCreateInfo::default();
+        let instance = unsafe {
+            entry.create_instance(&create_info, None)
+                .map_err(|e| format!("{:?}", e))?
+        };
+
+        println!("[GPU] Vulkan instance created");
+        Ok(Self { _entry: entry, _instance: instance })
     }
 
     pub fn render_frame(&mut self) {
-        println!("[GPU] Rendering frame...");
+        println!("[GPU] Drawing frame...");
     }
 }
 
 // controller.rs
+
 pub struct DualSense;
 
 impl DualSense {
@@ -154,11 +172,12 @@ impl DualSense {
     }
 
     pub fn poll(&mut self) {
-        println!("[Controller] Polling input...");
+        println!("[Controller] Polling...");
     }
 }
 
 // audio.rs
+
 pub struct AudioEngine;
 
 impl AudioEngine {
@@ -168,6 +187,6 @@ impl AudioEngine {
     }
 
     pub fn update(&mut self) {
-        println!("[Audio] Processing audio frame...");
+        println!("[Audio] Playing audio frame...");
     }
 }
